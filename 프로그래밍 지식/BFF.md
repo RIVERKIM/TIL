@@ -34,3 +34,5 @@ BFF에서 backend는 frontend의 modality(인터랙션 과정에서 사용되는
 ![Untitled](BFF%200339cc02a1224f01b4fc4c896b44b5c7/Untitled%203.png)
 
 > [참고 사이트](https://akfpartners.com/growth-blog/backend-for-frontend)
+
+erererer
