@@ -245,5 +245,3 @@ process.on(‘SIGINT’, function () {
 ```
 
 > [출처](https://engineering.linecorp.com/ko/blog/pm2-nodejs/)
-
-qqwerqwer
