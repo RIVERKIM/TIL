@@ -71,7 +71,7 @@ git remote add <name> git@github.com-sub:TempeICON/myprojectuserA.git
 
 명령 팔레트에서 다양한 git 명령 사용가능
 
-add gitignore
+add gitignore → 언어 별로 따로 지원 (.vscode/) 추가해주기.
 
 add remote 등
 
@@ -167,3 +167,73 @@ git tag -d <tag-name>
 서버에서 없애기
 
 git push <저장소>  -d <tag-name>
+
+### Pull Request(Social Coding)
+
+1. Fork Repository to my Github
+2. Clone to Local
+3. Make topic branch (git checkout -b <topic-branch> master)
+4. Edit code
+5. Diff, Add & commit to Topic Branch
+6. Push to Remote Topic-branch
+7. Change branch to Topic on Github
+8. Compare & Pull Request
+
+가령, A라는 오픈 소스가 있을 때 내 입장에서는 저 오픈 소스의 Collaborator가 아니기 때문에 저 소스를 fork 해서 내 저장소에서 clone하여 topic branch를 따서 작업. (항상 pull request는 branch 따서 작업.)
+
+이 topic branch에서 변경사항을 수정후 push 해서 A오픈 소스에게 내가 변경한 사항을 반영해 달라고 요청하는 것이 Pull request 이다.
+
+gitub에서 pull request 작성.
+
+답장은 Review change에서 문제없으면 approve하고 merge 
+
+Merge 후에 branch를 delete하는게 원칙
+
+→ 단 서버에서 지웠어도 로컬에서 남아있기에 지워야 한다.
+
+```jsx
+git branch -d <branch-name>
+git remote update --prune //branch 동기화 (없어진 것은 삭제.)
+```
+
+**Forked Repository Management (upstream)**
+
+1. Fork & Clone (already)
+2. Add Upstream (Original Repository)
+
+```jsx
+git remote add upstream <url- fork 말고 원래 소스>
+```
+
+1. Fetch Upstream/master branch
+
+```jsx
+git fetch upstream
+```
+
+1. Merge upstream/master → master
+
+```jsx
+git checkout master
+git merge upstream/master
+```
+
+1. Edit & Add & Commit to Topic Branch
+2. Push to Remote Branch
+3. Send Pull Request & Conversation
+
+**Pull request (Code Review) 내부 소스 가정.**
+
+#Collaborator                                          # Author(Leader)
+
+1. clone to Local
+2. Make topic branch
+3. Edit code
+4. Add & commit to Topic branch
+5. Push to Remote branch
+6. send pull request to review ⇒ Code Reviewing
+7. pull master & remove branch  <= Approve & merge to master
+
+```jsx
+git remote update origin --prune
+```
