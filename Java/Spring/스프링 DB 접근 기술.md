@@ -556,3 +556,181 @@ public class SpringConfig {
     }
 }
 ```
+
+### 스프링 데이터 JPA
+
+스프링 부트와 JPA만 사용해도 개발 생산성이 정말 많이 증가하고, 개발해야할 코드도 확연히 줄어듭니다. 여기에 스프링 데이터 JPA를 사용하면, 기존의 한계를 넘어 마치 마법처럼, 리포지토리에 구현 클래스 없이 인터페이스 만으로 개발을 완료할 수 있습니다. 그리고 반복 개발해온 기본 CRUD 기능도 스프링 데이터 JPA가 모두 제공합니다.
+
+스프링 부트와 JPA라는 기반 위에, 스프링 데이터 JPA라는 환상적인 프레임워크를 더하면 단순하고 반복이라 생각했던 개발 코드들이 확연히 줄어든다. 따라서 개발자는 비지니스 로직을 개발하는데 집중할 수 있다.
+
+**스프링 데이터 JPA 회원 리포지토리**
+
+```java
+package hello.hellospring.repository;
+
+import hello.hellospring.domain.Member;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface SpringDataJpaMemberRepository extends JpaRepository<Member, Long>, MemberRepository {
+
+    @Override
+    Optional<Member> findByName(String name);
+}
+```
+
+**스프링 데이터 JPA회원 리포지토리 사용하도록 스프링 설정 변경**
+
+```java
+package hello.hellospring;
+
+import hello.hellospring.repository.*;
+import hello.hellospring.service.MemberService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import javax.persistence.EntityManager;
+import javax.sql.DataSource;
+
+@Configuration
+public class SpringConfig {
+
+    private final MemberRepository memberRepository;
+
+    public SpringConfig(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+
+    /*private EntityManager em;
+
+    @Autowired
+    public SpringConfig(EntityManager em) {
+        this.em = em;
+    }*/
+/*private DataSource dataSource;
+
+    @Autowired
+    public SpringConfig(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }*/
+
+    @Bean
+    public MemberService memberService() {
+        return new MemberService(memberRepository);
+    }
+
+    /*@Bean
+    public MemberRepository memberRepository() {
+        return new MemoryMemberRepository();
+        return new JdbcMemberRepository(dataSource);
+        return new JdbcTemplateMemberRepository(dataSource);
+        return new JpaMemberRepository(em);
+    }*/
+}
+```
+
+- 스프링 데이터 JPA가 SpringDataJpaMemberRepository를 스프링 빈으로 자동으로 등록
+
+**스프링 데이터 JPA 제공 클래스**
+
+![Untitled](%E1%84%89%E1%85%B3%E1%84%91%E1%85%B3%E1%84%85%E1%85%B5%E1%86%BC%20DB%20%E1%84%8C%E1%85%A5%E1%86%B8%E1%84%80%E1%85%B3%E1%86%AB%20%E1%84%80%E1%85%B5%E1%84%89%E1%85%AE%E1%86%AF%20b0346473609e405cbe0d1f74e3deb7c8/Untitled%201.png)
+
+**스프링 데이터 JPA 제공 기능**
+
+- 인터페이스를 통한 기본적인 CRUD
+- findByName(), findByEmail() 처럼 메서드 이름 만으로 조회 기능 제공.
+- 페이징 기능 자동 제공
+
+> 참고: 실무에서는 JPA와 스프링 데이터 JPA를 기본으로 사용하고, 복잡한 동적 쿼리는 Querydsl이라는 라이브러리 사용. Querydsl을 사용하면 쿼리도 자바 코드로 안전하게 작성할 수 있고, 동적 쿼리도 편리하게 작성할 수 있다. 이 조합으로 해결하기 어려운 쿼리는 JPA가 제공하는 네이티브 쿼리를 사용하거나, JdbcTemplate를 사용.
+
+### AOP
+
+**AOP가 필요한 상황**
+
+- 모든 메소드의 호출 시간을 측정하고 싶다면?
+- 공통 관심 사항(cross-cutting concern) vs 핵심 관심 사항(core concern)
+- 회원 가입 시간, 회원 조회 시간을 측정하고 싶다면?
+
+![Untitled](%E1%84%89%E1%85%B3%E1%84%91%E1%85%B3%E1%84%85%E1%85%B5%E1%86%BC%20DB%20%E1%84%8C%E1%85%A5%E1%86%B8%E1%84%80%E1%85%B3%E1%86%AB%20%E1%84%80%E1%85%B5%E1%84%89%E1%85%AE%E1%86%AF%20b0346473609e405cbe0d1f74e3deb7c8/Untitled%202.png)
+
+```java
+public class MemberService {
+ /**
+ * 회원가입
+ */
+	 public Long join(Member member) {
+	 long start = System.currentTimeMillis();
+	 try {
+		 validateDuplicateMember(member); //중복 회원 검증
+		 memberRepository.save(member);
+		 return member.getId();
+		} finally {
+		 long finish = System.currentTimeMillis();
+		 long timeMs = finish - start;
+		 System.out.println("join " + timeMs + "ms");
+	 }
+ }
+...
+}
+```
+
+**문제**
+
+- 회원가입, 회원 조회에 시간을 측정하는 기능은 핵심 관심사항이 아니다.
+- 시간을 측정하는 로직은 공통 관심 사항이다.
+- 시간을 측정하는 로직과 핵심 비지니스의 로직이 섞여서 유지보수가 어렵다.
+- 시간을 측정하는 로직을 별도의 공통 로직으로 만들기 어렵다.
+- 시간을 측정하는 로직을 변경할 때 모든 로직을 찾아가면서 변경해야 한다.
+
+### AOP 적용
+
+- AOP: Aspect Oriented Programming
+- 공통 관심 사항(cross-cutting concern) vs 핵심 관심 사항(core concern) 분리
+
+![Untitled](%E1%84%89%E1%85%B3%E1%84%91%E1%85%B3%E1%84%85%E1%85%B5%E1%86%BC%20DB%20%E1%84%8C%E1%85%A5%E1%86%B8%E1%84%80%E1%85%B3%E1%86%AB%20%E1%84%80%E1%85%B5%E1%84%89%E1%85%AE%E1%86%AF%20b0346473609e405cbe0d1f74e3deb7c8/Untitled%203.png)
+
+**시간 측정 AOP 등록**
+
+```java
+package hello.hellospring.aop;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class TimeTraceAop {
+
+    @Around("execution(* hello.hellospring..*(..))")
+    public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        System.out.println("Start: " + joinPoint.toString());
+
+        try {
+            return joinPoint.proceed();
+        } finally {
+            long finish = System.currentTimeMillis();
+            long timeMs = finish - start;
+            System.out.println("END: " + joinPoint.toString() + " " + timeMs + "ms");
+        }
+    }
+}
+```
+
+**해결**
+
+- 회원가입, 회원 조회등 핵심 관심사항과 시간을 측정하는 공통 관심 사항을 분리한다.
+- 시간을 측정하는 로직을 별도의 공통 로직으로 만들었다.
+- 핵심 관심 사항을 깔끔하게 유지할 수 있다.
+- 변경이 필요하면 이 로직만 변경하면 된다.
+- 원하는 적용 대상을 선택할 수 있다.
+
+**스프링의 AOP 동작 방식 설명**
+
+**AOP 적용 전 후 전체 그림**
+
+![Untitled](%E1%84%89%E1%85%B3%E1%84%91%E1%85%B3%E1%84%85%E1%85%B5%E1%86%BC%20DB%20%E1%84%8C%E1%85%A5%E1%86%B8%E1%84%80%E1%85%B3%E1%86%AB%20%E1%84%80%E1%85%B5%E1%84%89%E1%85%AE%E1%86%AF%20b0346473609e405cbe0d1f74e3deb7c8/Untitled%204.png)
